@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: llm-powered-devops-failure-analysis
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-mini
+      - key: ENVIRONMENT
+        value: production
+      - key: MAX_LOG_CHARS
+        value: "20000"
+      - key: RATE_LIMIT_REQUESTS
+        value: "10"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+      - key: SERVE_FRONTEND
+        value: "true"
