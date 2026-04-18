@@ -27,6 +27,7 @@ root/
       schemas.py
     services/
       __init__.py
+      fallback_analyzer.py
       log_cleaner.py
       llm_service.py
 
@@ -58,6 +59,8 @@ root/
    - `root_cause`
    - `summary`
    - `fix`
+
+If the provider is unavailable, the backend falls back to a built-in heuristic analyzer so the user still gets a useful diagnosis instead of a generic upstream failure.
 
 ## Local Backend Setup
 
@@ -180,5 +183,6 @@ Content-Type: application/json
 - The backend uses the OpenAI Python SDK directly.
 - The app defaults to `gpt-5.4-mini`, which is a good balance of quality, speed, and cost for this use case.
 - If the model returns invalid JSON, the backend raises a clean API error.
+- If the provider request fails, the backend returns a best-effort heuristic analysis instead of a temporary provider error.
 - For local development, keep the frontend and backend separate.
 - For public deployment, this repo is set up to serve the built frontend from FastAPI through Docker.

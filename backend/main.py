@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
 from models.schemas import AnalysisRequest, AnalysisResponse
+from services.fallback_analyzer import build_fallback_analysis
 from services.llm_service import LLMServiceError, analyze_logs
 from services.log_cleaner import clean_logs
 from services.rate_limiter import InMemoryRateLimiter
@@ -86,18 +87,9 @@ async def analyze_failure(request: AnalysisRequest, http_request: Request) -> An
         analysis = await analyze_logs(cleaned_logs, raw_logs)
         return AnalysisResponse(**analysis)
     except LLMServiceError as exc:
-        if "OPENAI_API_KEY" in str(exc):
-            logger.exception("Missing OpenAI configuration.")
-            raise HTTPException(
-                status_code=500,
-                detail="The server is missing required configuration.",
-            ) from exc
-
-        logger.warning("LLM analysis failed: %s", exc)
-        raise HTTPException(
-            status_code=502,
-            detail="The analysis provider is temporarily unavailable. Please try again.",
-        ) from exc
+        logger.warning("LLM analysis failed, returning fallback analysis: %s", exc)
+        fallback_analysis = build_fallback_analysis(cleaned_logs, raw_logs)
+        return AnalysisResponse(**fallback_analysis)
     except Exception as exc:
         logger.exception("Unexpected server error while analyzing logs.")
         raise HTTPException(
