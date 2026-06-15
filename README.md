@@ -1,4 +1,4 @@
-# AI-Powered DevOps Failure Analysis Platform
+# DevOps Failure Analysis Platform with RAG
 
 A full-stack AIOps platform that analyzes CI/CD failure logs with AI, tracks historical incidents, and retrieves similar past failures using RAG (Retrieval-Augmented Generation). 
 
