@@ -70,6 +70,12 @@ def _handle_github_error(
 
     token_type = "custom Personal Access Token" if custom_token_used else "server GITHUB_TOKEN"
 
+    if status == 301:
+        raise GitHubServiceError(
+            f"Repository '{owner}/{repo}' has been moved or renamed (301 Moved Permanently).{detail} "
+            "Please verify the current owner and repository name on GitHub and try again."
+        )
+
     if status == 401:
         raise GitHubServiceError(
             f"GitHub authentication failed. Your {token_type} is invalid or expired.{detail} "
@@ -115,7 +121,7 @@ async def fetch_workflows(owner: str, repo: str, token: str | None = None) -> li
     _validate_repo_params(owner, repo)
 
     url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/actions/workflows"
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
         response = await client.get(url, headers=_build_headers(token))
 
     if response.status_code != 200:
@@ -157,7 +163,7 @@ async def fetch_runs(
     if status:
         params["status"] = status
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
         response = await client.get(url, headers=_build_headers(token), params=params)
 
     if response.status_code != 200:
@@ -197,7 +203,7 @@ async def _fetch_total_count(
     url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/actions/runs"
     params: dict[str, str | int] = {"per_page": 1, "status": status}
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
         response = await client.get(url, headers=_build_headers(token), params=params)
 
     if response.status_code in (401, 403, 404):
@@ -283,7 +289,7 @@ async def get_run_details(owner: str, repo: str, run_id: int, token: str | None 
 
     url = f"{GITHUB_API_BASE}/repos/{owner}/{repo}/actions/runs/{run_id}"
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
         response = await client.get(url, headers=_build_headers(token))
 
     if response.status_code != 200:
