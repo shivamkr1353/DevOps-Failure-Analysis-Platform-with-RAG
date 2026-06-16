@@ -5,10 +5,18 @@
 ### AI-Powered CI/CD Log Diagnostics with RAG Similarity Search
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Render-46E3B7?style=for-the-badge)](https://llm-powered-devops-failure-analysis.onrender.com/)
+
+🔗 **[Try the Live App on Render](https://llm-powered-devops-failure-analysis.onrender.com/)**
+
+<br />
+
+### Tech Stack
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![Gemini](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
+
+<br />
 
 A full-stack AIOps platform that **analyzes CI/CD failure logs with AI**, **tracks historical incidents**, and **retrieves similar past failures using RAG** (Retrieval-Augmented Generation) — so your team spends less time debugging and more time shipping.
 
