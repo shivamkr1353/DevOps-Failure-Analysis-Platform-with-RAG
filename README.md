@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🔍 DevOps Failure Analysis Platform
 
@@ -19,37 +19,42 @@ A full-stack AIOps platform that **analyzes CI/CD failure logs with AI**, **trac
 ## 📸 Screenshots
 
 ### Manual Log Analysis
+
 Paste any CI/CD log — from GitHub Actions, Jenkins, GitLab CI, or any other platform — and get an instant AI-powered diagnosis with root cause, summary, and actionable fix suggestions. Includes sample log templates to try it out immediately.
 
-![Manual Analysis — Paste logs and get instant AI root cause analysis, summary, and fix suggestions](docs/screenshots/03-manual-analysis.png)
+![Manual Analysis](docs/screenshots/03-manual-analysis.png)
 
 ---
 
 ### GitHub Actions Integration
+
 Connect any public or private GitHub repository. The platform fetches all failed workflow runs, displays live stats (total runs, failed count, success rate), and lets you analyze any failure with a single click.
 
-![GitHub Actions — Connect repos, view failure stats, and browse failed workflow runs](docs/screenshots/01-github-actions-dashboard.png)
+![GitHub Actions Dashboard](docs/screenshots/01-github-actions-dashboard.png)
 
 ---
 
 ### Paginated Failed Runs Table
+
 Browse through hundreds of failed runs with client-side pagination. Each row shows the run number, workflow name, branch, failure status, and creation timestamp — with an **Analyze** button for one-click diagnosis.
 
-![Failed Runs — Paginated table with workflow details and one-click analyze](docs/screenshots/04-paginated-failed-runs.png)
+![Failed Runs Table](docs/screenshots/04-paginated-failed-runs.png)
 
 ---
 
 ### AI Analysis Slide-Over Panel
+
 When you click **Analyze**, a slide-over panel opens with the full AI diagnosis: root cause, summary, and fix suggestion — each with copy buttons. The panel has a fixed header so you can always navigate back, even after scrolling.
 
-![Analysis Panel — AI-generated root cause, summary, fix suggestion with copy buttons](docs/screenshots/05-analysis-slide-over.png)
+![Analysis Slide-Over](docs/screenshots/05-analysis-slide-over.png)
 
 ---
 
 ### RAG-Powered Similar Failures
+
 Every analysis automatically retrieves similar historical failures from the vector database. Each match shows its root cause, fix, and a similarity score — helping teams spot recurring patterns and apply proven solutions.
 
-![RAG Similar Failures — Historical matches with similarity scores and proven fixes](docs/screenshots/02-rag-similar-failures.png)
+![RAG Similar Failures](docs/screenshots/02-rag-similar-failures.png)
 
 ---
 
@@ -74,61 +79,31 @@ Every analysis automatically retrieves similar historical failures from the vect
 Every log analysis (manual paste or GitHub Actions) flows through the same unified pipeline:
 
 ```
-                                    ┌──────────────────────┐
-                                    │   User Input         │
-                                    │  (Paste logs or      │
-                                    │   click "Analyze")   │
-                                    └──────────┬───────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────────┐
-                                    │  1. Clean Logs       │
-                                    │  Strip ANSI codes,   │
-                                    │  remove noise lines, │
-                                    │  extract error focus │
-                                    └──────────┬───────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────────┐
-                                    │  2. RAG Retrieval     │
-                                    │  Query ChromaDB for   │
-                                    │  top-3 similar past   │
-                                    │  failures (L2 dist)   │
-                                    └──────────┬───────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────────┐
-                                    │  3. Enriched Prompt   │
-                                    │  Current logs +       │
-                                    │  similar failures →   │
-                                    │  structured prompt    │
-                                    └──────────┬───────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────────┐
-                                    │  4. Gemini Analysis   │
-                                    │  Structured JSON out  │
-                                    │  (root_cause, summary,│
-                                    │   fix) via Pydantic   │
-                                    └──────────┬───────────┘
-                                               │
-                                     ┌─────────┴─────────┐
-                                     │                   │
-                                     ▼                   ▼
-                          ┌─────────────────┐  ┌─────────────────┐
-                          │ 5. Store in     │  │ 6. Store in     │
-                          │    SQLite       │  │    ChromaDB     │
-                          │  (incident DB)  │  │  (vector embed) │
-                          └─────────────────┘  └─────────────────┘
-                                     │                   │
-                                     └─────────┬─────────┘
-                                               │
-                                               ▼
-                                    ┌──────────────────────┐
-                                    │  7. Return Response   │
-                                    │  Root cause + summary │
-                                    │  + fix + similar hits │
-                                    └──────────────────────┘
+User Input (paste logs or click "Analyze")
+       |
+       v
+ 1. CLEAN LOGS
+    Strip ANSI codes, remove noise lines, extract error-focused lines
+       |
+       v
+ 2. RAG RETRIEVAL
+    Query ChromaDB for top-3 similar past failures (L2 distance)
+       |
+       v
+ 3. ENRICHED PROMPT
+    Combine current logs + similar failures into a structured prompt
+       |
+       v
+ 4. GEMINI ANALYSIS
+    Structured JSON output (root_cause, summary, fix) via Pydantic
+       |
+       v
+ 5. STORE RESULTS
+    SQLite (incident DB) + ChromaDB (vector embedding)
+       |
+       v
+ 6. RETURN RESPONSE
+    Root cause + summary + fix + similar historical matches
 ```
 
 ### Key Design Decisions
@@ -159,39 +134,39 @@ Every log analysis (manual paste or GitHub Actions) flows through the same unifi
 
 ```
 root/
-├── Dockerfile                    # Multi-stage build (Node → Python)
-├── render.yaml                   # Render deployment config with persistent disk
-├── run.bat                       # Windows: launch backend + frontend together
+├── Dockerfile                       # Multi-stage build (Node → Python)
+├── render.yaml                      # Render deployment config with persistent disk
+├── run.bat                          # Windows: launch backend + frontend together
 │
 ├── backend/
-│   ├── main.py                   # FastAPI app entry point + lifespan setup
-│   ├── config.py                 # Settings from environment variables
+│   ├── main.py                      # FastAPI app entry point + lifespan setup
+│   ├── config.py                    # Settings from environment variables
 │   ├── models/
-│   │   └── schemas.py            # Pydantic request/response schemas
+│   │   └── schemas.py               # Pydantic request/response schemas
 │   ├── routes/
-│   │   ├── analysis_routes.py    # POST /analyze/enriched
-│   │   ├── github_routes.py      # GitHub Actions API endpoints
-│   │   └── history_routes.py     # GET /history, /history/{id}
+│   │   ├── analysis_routes.py       # POST /analyze/enriched
+│   │   ├── github_routes.py         # GitHub Actions API endpoints
+│   │   └── history_routes.py        # GET /history, /history/{id}
 │   ├── services/
-│   │   ├── analysis_pipeline.py  # Unified 7-step analysis pipeline
-│   │   ├── llm_service.py        # Gemini structured output integration
-│   │   ├── log_cleaner.py        # ANSI stripping, noise removal, error focus
-│   │   ├── github_service.py     # GitHub API (workflows, runs, logs)
-│   │   ├── fallback_analyzer.py  # Regex-based fallback when LLM is unavailable
-│   │   └── rate_limiter.py       # In-memory sliding window rate limiter
+│   │   ├── analysis_pipeline.py     # Unified 7-step analysis pipeline
+│   │   ├── llm_service.py           # Gemini structured output integration
+│   │   ├── log_cleaner.py           # ANSI stripping, noise removal, error focus
+│   │   ├── github_service.py        # GitHub API (workflows, runs, logs)
+│   │   ├── fallback_analyzer.py     # Regex-based fallback when LLM is unavailable
+│   │   └── rate_limiter.py          # In-memory sliding window rate limiter
 │   ├── database/
-│   │   ├── schema.py             # SQLite table creation
-│   │   └── repository.py         # Async CRUD for incidents
+│   │   ├── schema.py                # SQLite table creation
+│   │   └── repository.py            # Async CRUD for incidents
 │   └── rag/
-│       ├── chroma_client.py      # ChromaDB collection management
-│       ├── embeddings.py         # Embedding text generation
-│       └── retriever.py          # Store + retrieve similar failures
+│       ├── chroma_client.py         # ChromaDB collection management
+│       ├── embeddings.py            # Embedding text generation
+│       └── retriever.py             # Store + retrieve similar failures
 │
 └── frontend/
     ├── src/
-    │   ├── App.jsx               # Main app with tab navigation
-    │   ├── api.js                # Centralized API client with PAT support
-    │   ├── index.css             # Global dark theme styling
+    │   ├── App.jsx                  # Main app with tab navigation
+    │   ├── api.js                   # Centralized API client with PAT support
+    │   ├── index.css                # Global dark theme styling
     │   └── components/
     │       ├── ManualAnalysis.jsx    # Log paste + sample templates
     │       ├── GitHubAnalysis.jsx    # Repo connector + runs display
@@ -263,6 +238,7 @@ cd ..
 ### 2b. Manual Setup (Linux/macOS)
 
 **Backend:**
+
 ```bash
 cd backend
 python -m venv .venv
@@ -273,6 +249,7 @@ uvicorn main:app --reload --port 8000
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm install
@@ -342,4 +319,3 @@ MIT
 **Built by [Shivam Kumar](https://github.com/shivamkr1353)**
 
 </div>
-]]>
