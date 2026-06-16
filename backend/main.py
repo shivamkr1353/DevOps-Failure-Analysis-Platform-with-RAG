@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
 from database.models import create_tables
+from database.seeding import seed_database_if_empty
 from models.schemas import AnalysisRequest, AnalysisResponse, EnrichedAnalysisResponse
 from routes.github_routes import router as github_router
 from routes.history_routes import router as history_router
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI):
     # Create SQLite tables.
     await create_tables(settings.database_url)
     logger.info("SQLite database initialized at %s", settings.database_url)
+
+    # Seed initial incidents and vector embeddings if database is empty.
+    await seed_database_if_empty(settings.database_url)
 
     # Warm up ChromaDB collection (lazy init on first use is also fine).
     try:

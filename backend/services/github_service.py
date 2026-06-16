@@ -46,6 +46,69 @@ def _build_headers(custom_token: str | None = None) -> dict[str, str]:
     return headers
 
 
+def _handle_github_error(
+    response: httpx.Response,
+    owner: str,
+    repo: str,
+    custom_token_used: bool,
+    run_id: int | None = None,
+) -> None:
+    """Analyze a failed GitHub API response and raise a precise GitHubServiceError."""
+
+    status = response.status_code
+    if status == 200:
+        return
+
+    # Check for common GitHub API error responses
+    detail = ""
+    try:
+        data = response.json()
+        if isinstance(data, dict) and "message" in data:
+            detail = f" (GitHub message: {data['message']})"
+    except Exception:
+        pass
+
+    token_type = "custom Personal Access Token" if custom_token_used else "server GITHUB_TOKEN"
+
+    if status == 401:
+        raise GitHubServiceError(
+            f"GitHub authentication failed. Your {token_type} is invalid or expired.{detail} "
+            "Please check, update, or clear the token."
+        )
+
+    elif status == 403:
+        # Check rate limiting headers
+        rate_limit_remaining = response.headers.get("x-ratelimit-remaining")
+        if rate_limit_remaining == "0":
+            raise GitHubServiceError(
+                "GitHub API rate limit exceeded. Please wait a while, or use a custom GitHub "
+                "Personal Access Token (PAT) to bypass the limit."
+            )
+        else:
+            raise GitHubServiceError(
+                f"GitHub API permission denied (403 Forbidden).{detail} Ensure your {token_type} "
+                "has the necessary scopes (e.g. 'repo' for private repositories, or 'actions:read')."
+            )
+
+    elif status == 404:
+        if run_id is not None:
+            raise GitHubServiceError(
+                f"Run {run_id} or its logs were not found in '{owner}/{repo}'.{detail} "
+                "The run might have been deleted, or your token may lack permissions to view it."
+            )
+        else:
+            raise GitHubServiceError(
+                f"Repository '{owner}/{repo}' not found.{detail} Verify the owner and repository names. "
+                f"If the repository is private, ensure your {token_type} is configured and has access."
+            )
+
+    # General HTTP error fallback
+    raise GitHubServiceError(
+        f"GitHub API request failed with status code {status}.{detail}"
+    )
+
+
+
 async def fetch_workflows(owner: str, repo: str, token: str | None = None) -> list[dict]:
     """Fetch all workflows for a GitHub repository."""
 
@@ -55,14 +118,8 @@ async def fetch_workflows(owner: str, repo: str, token: str | None = None) -> li
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(url, headers=_build_headers(token))
 
-    if response.status_code == 404:
-        raise GitHubServiceError(
-            f"Repository '{owner}/{repo}' not found. Check the owner/repo name or ensure the token has access."
-        )
-    if response.status_code == 401:
-        raise GitHubServiceError("GitHub authentication failed. Check your GITHUB_TOKEN.")
-    if response.status_code == 403:
-        raise GitHubServiceError("GitHub API rate limit exceeded or insufficient permissions.")
+    if response.status_code != 200:
+        _handle_github_error(response, owner, repo, custom_token_used=bool(token))
 
     response.raise_for_status()
     data = response.json()
@@ -103,10 +160,8 @@ async def fetch_runs(
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(url, headers=_build_headers(token), params=params)
 
-    if response.status_code == 404:
-        raise GitHubServiceError(f"Repository '{owner}/{repo}' not found.")
-    if response.status_code in (401, 403):
-        raise GitHubServiceError("GitHub authentication failed or rate limit exceeded.")
+    if response.status_code != 200:
+        _handle_github_error(response, owner, repo, custom_token_used=bool(token))
 
     response.raise_for_status()
     data = response.json()
@@ -197,12 +252,8 @@ async def download_run_logs(owner: str, repo: str, run_id: int, token: str | Non
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         response = await client.get(url, headers=_build_headers(token))
 
-    if response.status_code == 404:
-        raise GitHubServiceError(f"Logs not found for run {run_id}. The run may have expired.")
-    if response.status_code in (401, 403):
-        raise GitHubServiceError(
-            "Cannot download logs. A GITHUB_TOKEN with 'actions:read' scope is required."
-        )
+    if response.status_code != 200:
+        _handle_github_error(response, owner, repo, custom_token_used=bool(token), run_id=run_id)
 
     response.raise_for_status()
 
@@ -235,8 +286,8 @@ async def get_run_details(owner: str, repo: str, run_id: int, token: str | None 
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(url, headers=_build_headers(token))
 
-    if response.status_code == 404:
-        raise GitHubServiceError(f"Run {run_id} not found in '{owner}/{repo}'.")
+    if response.status_code != 200:
+        _handle_github_error(response, owner, repo, custom_token_used=bool(token), run_id=run_id)
 
     response.raise_for_status()
     r = response.json()
