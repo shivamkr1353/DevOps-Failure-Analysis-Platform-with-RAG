@@ -1,130 +1,274 @@
-# DevOps Failure Analysis Platform with RAG
+<![CDATA[<div align="center">
 
-A full-stack AIOps platform that analyzes CI/CD failure logs with AI, tracks historical incidents, and retrieves similar past failures using RAG (Retrieval-Augmented Generation). 
+# 🔍 DevOps Failure Analysis Platform
 
-This platform streamlines the debugging process for DevOps and engineering teams by automatically diagnosing build failures, tracking historical data, and providing actionable fixes.
+### AI-Powered CI/CD Log Diagnostics with RAG Similarity Search
 
-**[Live Demo](https://llm-powered-devops-failure-analysis.onrender.com/)**
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Render-46E3B7?style=for-the-badge)](https://llm-powered-devops-failure-analysis.onrender.com/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![Gemini](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 
-## Key Features
+A full-stack AIOps platform that **analyzes CI/CD failure logs with AI**, **tracks historical incidents**, and **retrieves similar past failures using RAG** (Retrieval-Augmented Generation) — so your team spends less time debugging and more time shipping.
 
-1. **GitHub Actions Integration** — Connect repositories and automatically analyze failed workflow runs.
-2. **AI-Powered Diagnostics** — Paste logs from any CI/CD platform and get instant root cause analysis and suggested fixes via Google's Gemini API.
-3. **RAG-Powered Similarity Search** — Automatically retrieves similar past failures using ChromaDB to improve analysis accuracy and consistency.
-4. **Failure History Tracking** — Persistent tracking and searching of all historical failure analyses using SQLite.
+</div>
 
-## Tech Stack
+---
 
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | FastAPI (Python 3.12) |
-| **Frontend** | React 18 + Vite |
-| **Styling** | Tailwind CSS 3 |
-| **LLM Engine** | Gemini API (structured output) |
-| **RAG & Vector DB** | ChromaDB with `all-MiniLM-L6-v2` embeddings |
-| **Database** | SQLite via `aiosqlite` |
-| **Integrations** | GitHub API via `httpx` (async HTTP) |
-| **Deployment** | Docker + Render |
+## 📸 Screenshots
 
-## Design Decisions & Technical Highlights
+### Manual Log Analysis
+Paste any CI/CD log — from GitHub Actions, Jenkins, GitLab CI, or any other platform — and get an instant AI-powered diagnosis with root cause, summary, and actionable fix suggestions. Includes sample log templates to try it out immediately.
 
-- **Zero-Bloat AI Integration**: No heavy frameworks like LangChain are used. The backend interacts directly with Gemini's structured-output API via the official `google-genai` SDK for maximum performance and predictability.
-- **Repository Pattern**: Database operations are abstracted using the repository pattern, allowing for seamless future migration from SQLite to PostgreSQL.
-- **Resilient Architecture**: All external dependencies feature graceful degradation. If the Vector DB is unavailable or the LLM provider experiences downtime, the system falls back to heuristic analysis or standard LLM requests to ensure continuous availability.
-- **Local Embeddings**: The RAG pipeline uses `all-MiniLM-L6-v2` running locally on the CPU, eliminating external API costs and latency for vector embeddings.
+![Manual Analysis — Paste logs and get instant AI root cause analysis, summary, and fix suggestions](docs/screenshots/03-manual-analysis.png)
 
-## Architecture & Pipeline
+---
 
-### Analysis Pipeline
+### GitHub Actions Integration
+Connect any public or private GitHub repository. The platform fetches all failed workflow runs, displays live stats (total runs, failed count, success rate), and lets you analyze any failure with a single click.
 
-The system uses a unified pipeline for both manual log analysis and automated GitHub Actions analysis:
+![GitHub Actions — Connect repos, view failure stats, and browse failed workflow runs](docs/screenshots/01-github-actions-dashboard.png)
 
-```text
-Incoming Logs
-  ↓
-Clean Logs (remove noise, isolate error signatures)
-  ↓
-Retrieve Similar Failures (ChromaDB RAG, top 3 by L2 distance)
-  ↓
-Build Enriched Prompt (current context + historical similar failures)
-  ↓
-Gemini LLM Analysis (enforces structured JSON output)
-  ↓
-Store Incident (SQLite) & Store Embedding (ChromaDB)
-  ↓
-Return Actionable Response
+---
+
+### Paginated Failed Runs Table
+Browse through hundreds of failed runs with client-side pagination. Each row shows the run number, workflow name, branch, failure status, and creation timestamp — with an **Analyze** button for one-click diagnosis.
+
+![Failed Runs — Paginated table with workflow details and one-click analyze](docs/screenshots/04-paginated-failed-runs.png)
+
+---
+
+### AI Analysis Slide-Over Panel
+When you click **Analyze**, a slide-over panel opens with the full AI diagnosis: root cause, summary, and fix suggestion — each with copy buttons. The panel has a fixed header so you can always navigate back, even after scrolling.
+
+![Analysis Panel — AI-generated root cause, summary, fix suggestion with copy buttons](docs/screenshots/05-analysis-slide-over.png)
+
+---
+
+### RAG-Powered Similar Failures
+Every analysis automatically retrieves similar historical failures from the vector database. Each match shows its root cause, fix, and a similarity score — helping teams spot recurring patterns and apply proven solutions.
+
+![RAG Similar Failures — Historical matches with similarity scores and proven fixes](docs/screenshots/02-rag-similar-failures.png)
+
+---
+
+## ✨ Key Features
+
+| Feature | What It Does |
+|---------|-------------|
+| **🤖 AI-Powered Diagnostics** | Paste logs from any CI/CD platform → get instant root cause, summary, and fix via Gemini AI |
+| **🔗 GitHub Actions Integration** | Connect repos → auto-fetch failed runs → one-click analysis with live stats |
+| **🧠 RAG Similarity Search** | Every analysis retrieves the top 3 similar past failures from ChromaDB to improve accuracy |
+| **📜 Failure History** | Full incident history with search, stored in SQLite — every analysis is tracked |
+| **🛡️ Graceful Degradation** | If Gemini is down, a regex-based fallback analyzer still produces useful diagnostics |
+| **🔑 Custom PAT Support** | Bring your own GitHub token for private repos — stored locally in your browser, never on the server |
+| **📊 Live Stats** | Real-time total runs, failed count, and success rate for any connected repository |
+
+---
+
+## 🏗️ Architecture
+
+### How the Analysis Pipeline Works
+
+Every log analysis (manual paste or GitHub Actions) flows through the same unified pipeline:
+
+```
+                                    ┌──────────────────────┐
+                                    │   User Input         │
+                                    │  (Paste logs or      │
+                                    │   click "Analyze")   │
+                                    └──────────┬───────────┘
+                                               │
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  1. Clean Logs       │
+                                    │  Strip ANSI codes,   │
+                                    │  remove noise lines, │
+                                    │  extract error focus │
+                                    └──────────┬───────────┘
+                                               │
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  2. RAG Retrieval     │
+                                    │  Query ChromaDB for   │
+                                    │  top-3 similar past   │
+                                    │  failures (L2 dist)   │
+                                    └──────────┬───────────┘
+                                               │
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  3. Enriched Prompt   │
+                                    │  Current logs +       │
+                                    │  similar failures →   │
+                                    │  structured prompt    │
+                                    └──────────┬───────────┘
+                                               │
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  4. Gemini Analysis   │
+                                    │  Structured JSON out  │
+                                    │  (root_cause, summary,│
+                                    │   fix) via Pydantic   │
+                                    └──────────┬───────────┘
+                                               │
+                                     ┌─────────┴─────────┐
+                                     │                   │
+                                     ▼                   ▼
+                          ┌─────────────────┐  ┌─────────────────┐
+                          │ 5. Store in     │  │ 6. Store in     │
+                          │    SQLite       │  │    ChromaDB     │
+                          │  (incident DB)  │  │  (vector embed) │
+                          └─────────────────┘  └─────────────────┘
+                                     │                   │
+                                     └─────────┬─────────┘
+                                               │
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  7. Return Response   │
+                                    │  Root cause + summary │
+                                    │  + fix + similar hits │
+                                    └──────────────────────┘
 ```
 
-### Database & RAG Architecture
-- **Vector DB**: Persistent ChromaDB with local filesystem storage. Each analyzed failure is stored as an embedding combining the cleaned log text, root cause, and fix suggestion.
-- **Relational DB**: SQLite tracks incidents with fields for workflow name, run ID, source type, logs, root cause, and timestamps.
-- **Auto-initialization**: Tables and collections are created on app startup via the FastAPI lifespan context manager.
+### Key Design Decisions
 
-## Project Structure
+- **Zero-Bloat AI Integration** — No LangChain or heavy frameworks. Direct Gemini SDK calls with Pydantic-enforced structured output for maximum speed and predictability.
+- **Local Embeddings** — RAG uses `all-MiniLM-L6-v2` running on CPU. No external embedding API costs or latency.
+- **Repository Pattern** — SQLite access is abstracted behind a repository layer, making it trivial to swap in PostgreSQL later.
+- **Resilient Fallback** — If the LLM is unavailable, a regex-based fallback analyzer detects common patterns (missing deps, timeouts, auth failures, port conflicts) and produces structured output.
+- **Auto-Redirect Handling** — All GitHub API calls follow 301 redirects automatically, so renamed/moved repos don't break the app.
 
-```text
+---
+
+## 🧰 Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Backend** | FastAPI (Python 3.12) | Async REST API with automatic OpenAPI docs |
+| **Frontend** | React 18 + Vite | Single-page app with dark theme UI |
+| **LLM Engine** | Gemini API (`google-genai` SDK) | Structured log analysis with JSON output |
+| **Vector DB** | ChromaDB + `all-MiniLM-L6-v2` | Local embeddings for RAG similarity search |
+| **Database** | SQLite via `aiosqlite` | Async incident history storage |
+| **HTTP Client** | `httpx` (async) | GitHub API integration with redirect support |
+| **Deployment** | Docker + Render | Multi-stage build, persistent disk for data |
+
+---
+
+## 📁 Project Structure
+
+```
 root/
-  backend/
-    main.py                          # FastAPI application entry point
-    models/                          # Pydantic request/response schemas
-    services/                        # Core business logic (LLM, RAG, GitHub, Cleaning)
-    database/                        # SQLite schema and repository pattern implementation
-    rag/                             # ChromaDB client, embeddings, and retrieval
-    routes/                          # API endpoints (GitHub, History, Analysis)
-
-  frontend/
-    src/
-      components/                    # React components (Dashboard, Modals, Panels)
-      api.js                         # Centralized API client
-      index.css                      # Global styling
+├── Dockerfile                    # Multi-stage build (Node → Python)
+├── render.yaml                   # Render deployment config with persistent disk
+├── run.bat                       # Windows: launch backend + frontend together
+│
+├── backend/
+│   ├── main.py                   # FastAPI app entry point + lifespan setup
+│   ├── config.py                 # Settings from environment variables
+│   ├── models/
+│   │   └── schemas.py            # Pydantic request/response schemas
+│   ├── routes/
+│   │   ├── analysis_routes.py    # POST /analyze/enriched
+│   │   ├── github_routes.py      # GitHub Actions API endpoints
+│   │   └── history_routes.py     # GET /history, /history/{id}
+│   ├── services/
+│   │   ├── analysis_pipeline.py  # Unified 7-step analysis pipeline
+│   │   ├── llm_service.py        # Gemini structured output integration
+│   │   ├── log_cleaner.py        # ANSI stripping, noise removal, error focus
+│   │   ├── github_service.py     # GitHub API (workflows, runs, logs)
+│   │   ├── fallback_analyzer.py  # Regex-based fallback when LLM is unavailable
+│   │   └── rate_limiter.py       # In-memory sliding window rate limiter
+│   ├── database/
+│   │   ├── schema.py             # SQLite table creation
+│   │   └── repository.py         # Async CRUD for incidents
+│   └── rag/
+│       ├── chroma_client.py      # ChromaDB collection management
+│       ├── embeddings.py         # Embedding text generation
+│       └── retriever.py          # Store + retrieve similar failures
+│
+└── frontend/
+    ├── src/
+    │   ├── App.jsx               # Main app with tab navigation
+    │   ├── api.js                # Centralized API client with PAT support
+    │   ├── index.css             # Global dark theme styling
+    │   └── components/
+    │       ├── ManualAnalysis.jsx    # Log paste + sample templates
+    │       ├── GitHubAnalysis.jsx    # Repo connector + runs display
+    │       ├── FailureHistory.jsx    # Searchable incident history
+    │       ├── RepoSelector.jsx     # Owner/repo input + PAT field
+    │       ├── FailedRunsTable.jsx   # Paginated failed runs table
+    │       ├── AnalysisPanel.jsx     # AI diagnosis result cards
+    │       ├── AnalysisModal.jsx     # Slide-over panel with fixed header
+    │       ├── SimilarFailures.jsx   # RAG match cards with scores
+    │       ├── ResultCard.jsx        # Copy-enabled result sections
+    │       ├── WorkflowStats.jsx     # Total/failed/success rate stats
+    │       ├── LogInput.jsx          # Log textarea with char counter
+    │       ├── ToastNotification.jsx # Animated toast messages
+    │       ├── LoadingState.jsx      # Skeleton loading indicator
+    │       └── ErrorState.jsx        # Error display component
+    └── vite.config.js
 ```
 
-## API Reference
+---
 
-| Method | Path | Description |
-|--------|------|-------------|
-| **GET** | `/health` | Application health check |
-| **POST** | `/analyze/enriched` | Analyze logs using LLM and RAG similarity |
-| **GET** | `/github/workflows` | List workflows for a given GitHub repository |
-| **GET** | `/github/runs/failed` | Retrieve failed workflow runs |
-| **POST** | `/github/analyze-run/{id}` | Analyze a specific GitHub Actions run |
-| **GET** | `/history` | Retrieve paginated failure history |
-| **GET** | `/history/{id}` | Get details of a specific incident |
+## 📡 API Reference
 
-## Quick Start (Local Development)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check — returns `{ "status": "ok" }` |
+| `POST` | `/analyze/enriched` | Analyze pasted logs with LLM + RAG |
+| `GET` | `/github/workflows?owner=X&repo=Y` | List all workflows for a repo |
+| `GET` | `/github/runs/failed?owner=X&repo=Y` | Get failed runs with stats |
+| `POST` | `/github/analyze-run/{run_id}` | Analyze a specific workflow run |
+| `GET` | `/history?page=1&page_size=20` | Paginated failure history |
+| `GET` | `/history/{id}` | Get a specific incident by ID |
+
+> All GitHub endpoints accept an optional `X-GitHub-Token` header for private repo access.
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.12+
 - Node.js 18+
-- GitHub Personal Access Token (Fine-grained with `Actions: Read-only` or Classic with `repo` scope)
-- Gemini API Key
+- [Gemini API Key](https://ai.google.dev/) (required)
+- [GitHub PAT](https://github.com/settings/tokens) (optional — for private repos or higher rate limits)
 
-### Windows Setup (Automated)
-If you are on Windows, you can launch both the frontend and the backend automatically using the `run.bat` script:
+### 1. Clone & Configure
 
-1. **Environment Variables**:
-   - Copy `backend/.env.example` to `backend/.env` and add your `GEMINI_API_KEY` and `GITHUB_TOKEN`.
-   - Copy `frontend/.env.example` to `frontend/.env`.
-2. **Install Dependencies**:
-   ```bash
-   cd backend && python -m venv ..\.venv && ..\.venv\Scripts\python -m pip install -r requirements.txt
-   cd ../frontend && npm install
-   cd ..
-   ```
-3. **Run Application**:
-   ```bash
-   .\run.bat
-   ```
+```bash
+git clone https://github.com/shivamkr1353/DevOps-Failure-Analysis-Platform-with-RAG.git
+cd DevOps-Failure-Analysis-Platform-with-RAG
 
-### Manual Setup
+# Configure environment
+cp backend/.env.example backend/.env
+# Edit backend/.env and add your GEMINI_API_KEY (and optionally GITHUB_TOKEN)
+```
+
+### 2a. Windows — Automated Launch
+
+```bash
+# Install dependencies (first time only)
+cd backend && python -m venv ..\.venv && ..\.venv\Scripts\python -m pip install -r requirements.txt
+cd ../frontend && npm install
+cd ..
+
+# Launch both servers
+.\run.bat
+```
+
+### 2b. Manual Setup (Linux/macOS)
 
 **Backend:**
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env       # Configure your .env file
+cp .env.example .env        # Add your GEMINI_API_KEY
 uvicorn main:app --reload --port 8000
 ```
 
@@ -136,15 +280,66 @@ cp .env.example .env
 npm run dev
 ```
 
-## Docker Deployment
+### 3. Open the App
 
-The project is fully containerized for easy deployment. The configuration includes persistent volume mounts for the database and vector store.
+Visit `http://localhost:5173` (Vite dev server) or `http://localhost:8000` (if serving frontend from backend).
+
+---
+
+## 🐳 Docker Deployment
+
+The project uses a multi-stage Docker build (Node for frontend → Python for backend):
 
 ```bash
 docker build -t devops-failure-analysis .
+
 docker run -p 8000:8000 \
   -v devops-data:/app/backend/data \
   --env GEMINI_API_KEY=your_key \
   --env GITHUB_TOKEN=your_token \
   devops-failure-analysis
 ```
+
+The persistent volume at `/app/backend/data` stores both the SQLite database and ChromaDB vector store, so your failure history and RAG embeddings survive container restarts.
+
+---
+
+## ☁️ Render Deployment
+
+This project includes a `render.yaml` for one-click deployment to [Render](https://render.com):
+
+- **Runtime**: Docker
+- **Persistent Disk**: 1 GB mounted at `/app/backend/data` for SQLite + ChromaDB
+- **Health Check**: `/health` endpoint
+- **Auto-Deploy**: On every push to `main`
+
+Set `GEMINI_API_KEY` and (optionally) `GITHUB_TOKEN` as environment variables in the Render dashboard.
+
+---
+
+## 🧪 How It Handles Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| **Gemini API down** | Falls back to regex-based pattern matching (missing deps, timeouts, auth errors) |
+| **ChromaDB empty** | Skips RAG retrieval, analyzes with LLM only — no crash |
+| **GitHub repo renamed** | Automatically follows 301 redirects with a clear error message if needed |
+| **Rate limit exceeded** | Returns a user-friendly message with retry-after timing |
+| **Invalid PAT** | Specific 401 error message suggesting token refresh |
+| **No failed runs found** | Returns 404 with clear "no failures" message |
+| **Very large logs** | Cleaned and trimmed to 120 focused error lines before sending to LLM |
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+<div align="center">
+
+**Built by [Shivam Kumar](https://github.com/shivamkr1353)**
+
+</div>
+]]>
