@@ -28,7 +28,7 @@ A full-stack AIOps platform that **analyzes CI/CD failure logs with AI**, **trac
 
 ### Manual Log Analysis
 
-Paste any CI/CD log — from GitHub Actions, Jenkins, GitLab CI, or any other platform — and get an instant AI-powered diagnosis with root cause, summary, and actionable fix suggestions. Includes sample log templates to try it out immediately.
+Paste any CI/CD log — from GitHub Actions, and get an instant AI-powered diagnosis with root cause, summary, and actionable fix suggestions. Includes sample log templates to try it out immediately.
 
 ![Manual Analysis](docs/screenshots/03-manual-analysis.png)
 
