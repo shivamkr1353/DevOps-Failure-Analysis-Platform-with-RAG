@@ -217,7 +217,6 @@ root/
 
 - Python 3.12+
 - Node.js 18+
-- [Gemini API Key](https://ai.google.dev/) (required)
 - [GitHub PAT](https://github.com/settings/tokens) (optional — for private repos or higher rate limits)
 
 ### 1. Clone & Configure
